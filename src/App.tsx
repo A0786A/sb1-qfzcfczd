@@ -9,6 +9,12 @@ import Marketing from './pages/Marketing';
 import Leads from './pages/Leads';
 import Interns from './pages/Interns';
 import Login from './pages/Login';
+import Settings from './pages/Settings';
+import AIServices from './pages/AIServices';
+import Reports from './pages/Reports';
+import Calendar from './pages/Calendar';
+import Communications from './pages/Communications';
+import Tasks from './pages/Tasks';
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -31,12 +37,12 @@ function App() {
             <Route path="marketing" element={<Marketing />} />
             <Route path="leads" element={<Leads />} />
             <Route path="interns" element={<Interns />} />
-            <Route path="tasks" element={<ComingSoon title="Tasks" />} />
-            <Route path="calendar" element={<ComingSoon title="Calendar" />} />
-            <Route path="communication" element={<ComingSoon title="Communication" />} />
-            <Route path="services" element={<ComingSoon title="AI Services" />} />
-            <Route path="reports" element={<ComingSoon title="Reports & Analytics" />} />
-            <Route path="settings" element={<ComingSoon title="Settings" />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="tasks" element={<Tasks />} />
+            <Route path="calendar" element={<Calendar />} />
+            <Route path="communication" element={<Communications />} />
+            <Route path="services" element={<AIServices />} />
+            <Route path="reports" element={<Reports />} />
             <Route path="*" element={<Navigate replace to="/" />} />
           </Route>
         </Routes>

@@ -9,12 +9,14 @@ import {
   FileEdit,
   Trash2,
   X,
-  ArrowRight
+  ArrowRight,
+  Calendar
 } from 'lucide-react';
 import { Client } from '../types';
 import Button from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { supabase } from '../lib/supabase';
+import { formatPhoneNumber } from '../utils/formatters';
 
 const Clients: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,7 +69,6 @@ const Clients: React.FC = () => {
             .eq('id', client.id);
 
           if (error) throw error;
-          
           await fetchClients();
         } catch (error) {
           console.error('Error deleting client:', error);
@@ -87,7 +88,7 @@ const Clients: React.FC = () => {
               {getStatusBadge(client.status)}
             </div>
           </div>
-          
+
           <div className="mt-4">
             <div className="flex items-center text-sm text-gray-500">
               <Mail className="mr-1.5 h-4 w-4 flex-shrink-0 text-gray-400" />
@@ -95,11 +96,17 @@ const Clients: React.FC = () => {
             </div>
             <div className="mt-2 flex items-center text-sm text-gray-500">
               <Phone className="mr-1.5 h-4 w-4 flex-shrink-0 text-gray-400" />
-              <span>{client.phone}</span>
+              <span>{formatPhoneNumber(client.phone || '')}</span>
             </div>
           </div>
+
+          {client.notes && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-500 line-clamp-2">{client.notes}</p>
+            </div>
+          )}
         </div>
-        
+
         <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
           <div className="flex justify-between">
             <div className="space-x-2">
@@ -211,11 +218,12 @@ const Clients: React.FC = () => {
   };
 
   const EditClientModal = () => {
-    const [formData, setFormData] = useState(selectedClient || {
+    const [formData, setFormData] = useState<Partial<Client>>(selectedClient || {
       name: '',
       company: '',
       email: '',
       phone: '',
+      website: '',
       status: 'active'
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -225,19 +233,35 @@ const Clients: React.FC = () => {
       setIsSubmitting(true);
 
       try {
+        // Ensure we have all required fields
+        const updateData = {
+          name: formData.name,
+          company: formData.company,
+          email: formData.email,
+          phone: formData.phone,
+          website: formData.website,
+          status: formData.status
+        };
+
         const { error } = await supabase
           .from('clients')
-          .update(formData)
+          .update(updateData)
           .eq('id', selectedClient?.id);
 
         if (error) throw error;
-        
         await fetchClients();
         setShowEditModal(false);
       } catch (error) {
         console.error('Error updating client:', error);
       } finally {
         setIsSubmitting(false);
+      }
+    };
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value.replace(/\D/g, '');
+      if (value.length <= 10) {
+        setFormData({ ...formData, phone: value });
       }
     };
 
@@ -263,80 +287,108 @@ const Clients: React.FC = () => {
                 <h3 className="text-lg font-semibold leading-6 text-gray-900">
                   Edit Client
                 </h3>
-                <form onSubmit={handleSubmit} className="mt-4">
+                <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                      Name
+                    </label>
                     <input
                       type="text"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      id="name"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
                     />
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Company</label>
+                  <div>
+                    <label htmlFor="company" className="block text-sm font-medium text-gray-700">
+                      Company
+                    </label>
                     <input
                       type="text"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      value={formData.company}
+                      id="company"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formData.company || ''}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                     />
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
                     <input
                       type="email"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      id="email"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
                     />
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Phone</label>
+                  <div>
+                    <label htmlFor="website" className="block text-sm font-medium text-gray-700">
+                      Website
+                    </label>
                     <input
-                      type="tel"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      type="url"
+                      id="website"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formData.website || ''}
+                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      placeholder="https://example.com"
                     />
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formData.phone || ''}
+                      onChange={handlePhoneChange}
+                      placeholder="(xxx) xxx-xxxx"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                      Status
+                    </label>
                     <select
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      id="status"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
                       value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      required
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as Client['status'] })}
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                       <option value="lead">Lead</option>
                     </select>
                   </div>
-                  
-                  <div className="mt-6 sm:flex sm:flex-row-reverse">
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      className="w-full sm:ml-3 sm:w-auto"
-                      isLoading={isSubmitting}
-                    >
-                      Save Changes
-                    </Button>
+
+                  <div className="mt-6 flex justify-end space-x-3">
                     <Button
                       type="button"
                       variant="outline"
-                      className="mt-3 w-full sm:mt-0 sm:w-auto"
                       onClick={() => setShowEditModal(false)}
                       disabled={isSubmitting}
                     >
                       Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      isLoading={isSubmitting}
+                      disabled={isSubmitting}
+                    >
+                      Save Changes
                     </Button>
                   </div>
                 </form>
@@ -349,12 +401,13 @@ const Clients: React.FC = () => {
   };
 
   const NewClientModal = () => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<Partial<Client>>({
       name: '',
       company: '',
       email: '',
       phone: '',
-      status: 'active' as const
+      website: '',
+      status: 'active'
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -424,7 +477,7 @@ const Clients: React.FC = () => {
                     <input
                       type="text"
                       className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      value={formData.company}
+                      value={formData.company || ''}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                     />
                   </div>
@@ -441,11 +494,22 @@ const Clients: React.FC = () => {
                   </div>
                   
                   <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700">Website</label>
+                    <input
+                      type="url"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formData.website || ''}
+                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                  
+                  <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700">Phone</label>
                     <input
                       type="tel"
                       className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      value={formData.phone}
+                      value={formData.phone || ''}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     />
                   </div>

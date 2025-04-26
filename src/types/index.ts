@@ -6,10 +6,12 @@ export interface Client {
   company: string | null;
   email: string;
   phone: string | null;
+  website: string | null;
   status: 'active' | 'inactive' | 'lead';
   created_at: string;
   last_contact: string;
   avatar?: string;
+  notes?: string;
 }
 
 export interface Lead {

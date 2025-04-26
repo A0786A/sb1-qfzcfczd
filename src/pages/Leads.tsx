@@ -24,6 +24,7 @@ import { Card } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { Lead } from '../types';
 import { supabase } from '../lib/supabase';
+import { formatPhoneNumber } from '../utils/formatters';
 
 const Leads: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,7 +48,7 @@ const Leads: React.FC = () => {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created', { ascending: false });
 
       if (error) throw error;
       setLeads(data || []);
@@ -61,8 +62,8 @@ const Leads: React.FC = () => {
   // Filter leads based on search query and status filter
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = searchQuery.toLowerCase() === '' || 
-      lead.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (lead.company && lead.company.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -157,13 +158,13 @@ const Leads: React.FC = () => {
                     <div className="mt-2 grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {selectedLead.first_name} {selectedLead.last_name}
+                          {selectedLead.firstName} {selectedLead.lastName}
                         </p>
-                        <p className="text-sm text-gray-500">{selectedLead.job_title}</p>
+                        <p className="text-sm text-gray-500">{selectedLead.jobTitle}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">{selectedLead.email}</p>
-                        <p className="text-sm text-gray-500">{selectedLead.phone}</p>
+                        <p className="text-sm text-gray-500">{formatPhoneNumber(selectedLead.phone)}</p>
                       </div>
                     </div>
                   </div>
@@ -179,7 +180,7 @@ const Leads: React.FC = () => {
                   <div>
                     <h4 className="text-sm font-medium text-gray-500">Project Details</h4>
                     <div className="mt-2">
-                      <p className="text-sm text-gray-900">Budget: {selectedLead.budget_range}</p>
+                      <p className="text-sm text-gray-900">Budget: {selectedLead.budget}</p>
                       <p className="text-sm text-gray-900">Timeline: {selectedLead.timeline}</p>
                     </div>
                   </div>
@@ -222,17 +223,17 @@ const Leads: React.FC = () => {
 
   const EditLeadModal = () => {
     const [formData, setFormData] = useState(selectedLead || {
-      first_name: '',
-      last_name: '',
+      firstName: '',
+      lastName: '',
       email: '',
       phone: '',
       company: '',
-      job_title: '',
+      jobTitle: '',
       source: '',
       status: 'new',
       notes: '',
       industry: '',
-      budget_range: '',
+      budget: '',
       timeline: '',
       requirements: ''
     });
@@ -249,13 +250,19 @@ const Leads: React.FC = () => {
           .eq('id', selectedLead?.id);
 
         if (error) throw error;
-        
         await fetchLeads();
         setShowEditModal(false);
       } catch (error) {
         console.error('Error updating lead:', error);
       } finally {
         setIsSubmitting(false);
+      }
+    };
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value.replace(/\D/g, '');
+      if (value.length <= 10) {
+        setFormData({ ...formData, phone: value });
       }
     };
 
@@ -281,108 +288,99 @@ const Leads: React.FC = () => {
                 <h3 className="text-lg font-semibold leading-6 text-gray-900">
                   Edit Lead
                 </h3>
-                <form onSubmit={handleSubmit} className="mt-4">
+                <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">First Name</label>
+                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                        First Name
+                      </label>
                       <input
                         type="text"
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                        value={formData.first_name}
-                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                        id="firstName"
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                        value={formData.firstName}
+                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                        Last Name
+                      </label>
                       <input
                         type="text"
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                        value={formData.last_name}
-                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                        id="lastName"
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                         required
                       />
                     </div>
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
                     <input
                       type="email"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      id="email"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
                     />
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Phone</label>
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                      Phone
+                    </label>
                     <input
                       type="tel"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      id="phone"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formatPhoneNumber(formData.phone)}
+                      onChange={handlePhoneChange}
+                      placeholder="(xxx) xxx-xxxx"
                     />
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Company</label>
+                  <div>
+                    <label htmlFor="company" className="block text-sm font-medium text-gray-700">
+                      Company
+                    </label>
                     <input
                       type="text"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      id="company"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
                       value={formData.company}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                     />
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Job Title</label>
+                  <div>
+                    <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700">
+                      Job Title
+                    </label>
                     <input
                       type="text"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      value={formData.job_title}
-                      onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                      id="jobTitle"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formData.jobTitle}
+                      onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
                     />
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Industry</label>
-                    <input
-                      type="text"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      value={formData.industry}
-                      onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Budget Range</label>
-                    <input
-                      type="text"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      value={formData.budget_range}
-                      onChange={(e) => setFormData({ ...formData, budget_range: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Timeline</label>
-                    <input
-                      type="text"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      value={formData.timeline}
-                      onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <div>
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                      Status
+                    </label>
                     <select
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      id="status"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
                       value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      required
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as Lead['status'] })}
                     >
                       <option value="new">New</option>
                       <option value="contacted">Contacted</option>
@@ -391,43 +389,35 @@ const Leads: React.FC = () => {
                     </select>
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Requirements</label>
+                  <div>
+                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                      Notes
+                    </label>
                     <textarea
+                      id="notes"
                       rows={3}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      value={formData.requirements}
-                      onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Notes</label>
-                    <textarea
-                      rows={3}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     />
                   </div>
-                  
-                  <div className="mt-6 sm:flex sm:flex-row-reverse">
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      className="w-full sm:ml-3 sm:w-auto"
-                      isLoading={isSubmitting}
-                    >
-                      Save Changes
-                    </Button>
+
+                  <div className="mt-6 flex justify-end space-x-3">
                     <Button
                       type="button"
                       variant="outline"
-                      className="mt-3 w-full sm:mt-0 sm:w-auto"
                       onClick={() => setShowEditModal(false)}
                       disabled={isSubmitting}
                     >
                       Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      isLoading={isSubmitting}
+                      disabled={isSubmitting}
+                    >
+                      Save Changes
                     </Button>
                   </div>
                 </form>
@@ -445,74 +435,270 @@ const Leads: React.FC = () => {
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowUploadModal(false)} />
         
         <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+          <div className="absolute right-0 top-0 pr-4 pt-4">
+            <button
+              type="button"
+              className="rounded-md bg-white text-gray-400 hover:text-gray-500"
+              onClick={() => setShowUploadModal(false)}
+            >
+              <span className="sr-only">Close</span>
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+          
           <div className="sm:flex sm:items-start">
-            <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100">
-              <Upload className="h-6 w-6 text-indigo-600" />
-            </div>
-            <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+            <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
               <h3 className="text-lg font-semibold leading-6 text-gray-900">
                 Upload Leads
               </h3>
-              <div className="mt-2">
-                <p className="text-sm text-gray-500">
-                  Upload your leads using our CSV template. Make sure your file matches the required format.
-                </p>
-              </div>
-              
               <div className="mt-4">
+                <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                  <div className="space-y-1 text-center">
+                    <FileSpreadsheet className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="flex text-sm text-gray-600">
+                      <label
+                        htmlFor="file-upload"
+                        className="relative cursor-pointer rounded-md bg-white font-medium text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:text-indigo-500"
+                      >
+                        <span>Upload a file</span>
+                        <input
+                          id="file-upload"
+                          name="file-upload"
+                          type="file"
+                          className="sr-only"
+                          ref={fileInputRef}
+                          onChange={handleFileUpload}
+                          accept=".csv,.xlsx"
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      CSV or Excel files up to 10MB
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={downloadTemplate}
-                  leftIcon={<Download className="h-4 w-4" />}
                 >
                   Download Template
                 </Button>
-              </div>
-
-              <div className="mt-4">
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 mb-3 text-gray-400" />
-                      <p className="mb-2 text-sm text-gray-500">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-500">CSV files only</p>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      accept=".csv"
-                      onChange={handleFileUpload}
-                    />
-                  </label>
-                </div>
+                <Button
+                  variant="primary"
+                  onClick={() => setShowUploadModal(false)}
+                >
+                  Close
+                </Button>
               </div>
             </div>
-          </div>
-          
-          <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-            <Button
-              variant="primary"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full sm:w-auto sm:ml-3"
-            >
-              Upload File
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowUploadModal(false)}
-              className="mt-3 w-full sm:mt-0 sm:w-auto"
-            >
-              Cancel
-            </Button>
           </div>
         </div>
       </div>
     </div>
   );
+
+  const NewLeadModal = () => {
+    const [formData, setFormData] = useState({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      company: '',
+      jobTitle: '',
+      source: '',
+      status: 'new' as const,
+      notes: '',
+      industry: '',
+      budget: '',
+      timeline: '',
+      requirements: ''
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsSubmitting(true);
+
+      try {
+        const { error } = await supabase
+          .from('leads')
+          .insert([formData]);
+
+        if (error) throw error;
+        await fetchLeads();
+        setShowNewLeadModal(false);
+      } catch (error) {
+        console.error('Error creating lead:', error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="flex min-h-full items-center justify-center p-4">
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowNewLeadModal(false)} />
+          
+          <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+            <div className="absolute right-0 top-0 pr-4 pt-4">
+              <button
+                type="button"
+                className="rounded-md bg-white text-gray-400 hover:text-gray-500"
+                onClick={() => setShowNewLeadModal(false)}
+              >
+                <span className="sr-only">Close</span>
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="sm:flex sm:items-start">
+              <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                <h3 className="text-lg font-semibold leading-6 text-gray-900">
+                  New Lead
+                </h3>
+                <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="new-firstName" className="block text-sm font-medium text-gray-700">
+                        First Name
+                      </label>
+                      <input
+                        type="text"
+                        id="new-firstName"
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                        value={formData.firstName}
+                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="new-lastName" className="block text-sm font-medium text-gray-700">
+                        Last Name
+                      </label>
+                      <input
+                        type="text"
+                        id="new-lastName"
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="new-email" className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      id="new-email"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="new-phone" className="block text-sm font-medium text-gray-700">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      id="new-phone"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="new-company" className="block text-sm font-medium text-gray-700">
+                      Company
+                    </label>
+                    <input
+                      type="text"
+                      id="new-company"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formData.company}
+                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="new-jobTitle" className="block text-sm font-medium text-gray-700">
+                      Job Title
+                    </label>
+                    <input
+                      type="text"
+                      id="new-jobTitle"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formData.jobTitle}
+                      onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="new-status" className="block text-sm font-medium text-gray-700">
+                      Status
+                    </label>
+                    <select
+                      id="new-status"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as Lead['status'] })}
+                    >
+                      <option value="new">New</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="qualified">Qualified</option>
+                      <option value="unqualified">Unqualified</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="new-notes" className="block text-sm font-medium text-gray-700">
+                      Notes
+                    </label>
+                    <textarea
+                      id="new-notes"
+                      rows={3}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="mt-6 flex justify-end space-x-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowNewLeadModal(false)}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      isLoading={isSubmitting}
+                      disabled={isSubmitting}
+                    >
+                      Create Lead
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const LeadCard: React.FC<{ lead: Lead }> = ({ lead }) => {
     const handleDelete = async () => {
@@ -524,7 +710,6 @@ const Leads: React.FC = () => {
             .eq('id', lead.id);
 
           if (error) throw error;
-          
           await fetchLeads();
         } catch (error) {
           console.error('Error deleting lead:', error);
@@ -533,92 +718,76 @@ const Leads: React.FC = () => {
     };
 
     return (
-      <Card className="overflow-hidden">
-        <div className="p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">
-                {lead.first_name} {lead.last_name}
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">{lead.job_title}</p>
-            </div>
-            <div className="flex items-center">
-              {getStatusBadge(lead.status)}
-            </div>
+      <Card className="p-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">
+              {lead.firstName} {lead.lastName}
+            </h3>
+            <p className="text-sm text-gray-500">{lead.jobTitle}</p>
           </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-            <div className="flex items-center text-gray-500">
-              <Building2 className="h-4 w-4 mr-1.5 text-gray-400" />
-              <span>{lead.company}</span>
-            </div>
-            <div className="flex items-center text-gray-500">
-              <Briefcase className="h-4 w-4 mr-1.5 text-gray-400" />
-              <span>{lead.industry || 'N/A'}</span>
-            </div>
-            <div className="flex items-center text-gray-500">
-              <Mail className="h-4 w-4 mr-1.5 text-gray-400" />
-              <span>{lead.email}</span>
-            </div>
-            <div className="flex items-center text-gray-500">
-              <Phone className="h-4 w-4 mr-1.5 text-gray-400" />
-              <span>{lead.phone}</span>
-            </div>
-          </div>
-
-          {lead.notes && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-500 line-clamp-2">{lead.notes}</p>
-            </div>
-          )}
-
-          <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-            <div className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
-              <span>Added {formatDate(lead.created_at)}</span>
-            </div>
-            {lead.budget_range && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                {lead.budget_range}
-              </span>
-            )}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handleViewLead(lead)}
+              className="p-1 text-gray-400 hover:text-gray-500"
+            >
+              <Eye className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => handleEditLead(lead)}
+              className="p-1 text-gray-400 hover:text-gray-500"
+            >
+              <FileEdit className="h-5 w-5" />
+            </button>
+            <button
+              onClick={handleDelete}
+              className="p-1 text-gray-400 hover:text-red-500"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
           </div>
         </div>
-        
-        <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
-          <div className="flex justify-between">
-            <div className="space-x-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                leftIcon={<FileEdit className="h-4 w-4" />}
-                onClick={() => handleEditLead(lead)}
-              >
-                Edit
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                leftIcon={<Trash2 className="h-4 w-4 text-rose-500" />}
-                className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
-                onClick={handleDelete}
-              >
-                Delete
-              </Button>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              rightIcon={<ArrowRight className="h-4 w-4" />}
-              onClick={() => handleViewLead(lead)}
-            >
-              View Details
-            </Button>
+
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-500">Company</p>
+            <p className="text-sm font-medium text-gray-900">{lead.company}</p>
           </div>
+          <div>
+            <p className="text-sm text-gray-500">Status</p>
+            {getStatusBadge(lead.status)}
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center space-x-4">
+          <a
+            href={`mailto:${lead.email}`}
+            className="flex items-center text-sm text-gray-500 hover:text-gray-700"
+          >
+            <Mail className="h-4 w-4 mr-1" />
+            {lead.email}
+          </a>
+          <a
+            href={`tel:${lead.phone}`}
+            className="flex items-center text-sm text-gray-500 hover:text-gray-700"
+          >
+            <Phone className="h-4 w-4 mr-1" />
+            {lead.phone}
+          </a>
         </div>
       </Card>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -626,22 +795,16 @@ const Leads: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Manage and track your sales leads
+            Manage and track your potential clients
           </p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <Button
-            variant="outline"
-            leftIcon={<FileSpreadsheet className="h-4 w-4" />}
-            onClick={() => setShowUploadModal(true)}
-          >
-            Import Leads
-          </Button>
-          <Button
             variant="primary"
-            leftIcon={<Plus className="h-4 w-4" />}
             onClick={() => setShowNewLeadModal(true)}
+            className="flex items-center"
           >
+            <Plus className="h-4 w-4 mr-2" />
             Add Lead
           </Button>
         </div>
@@ -662,23 +825,25 @@ const Leads: React.FC = () => {
             />
           </div>
         </div>
+
         <div className="flex items-center space-x-2">
           <div className="relative">
-            <button
-              type="button"
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            <Button
+              variant="outline"
               onClick={() => setShowFilterMenu(!showFilterMenu)}
+              className="flex items-center"
             >
-              <Filter className="h-4 w-4 mr-2 text-gray-500" />
+              <Filter className="h-4 w-4 mr-2" />
               {statusFilter === null ? 'All Status' : statusOptions.find(o => o.value === statusFilter)?.label}
-              <ChevronDown className="h-4 w-4 ml-2 text-gray-500" />
-            </button>
+              <ChevronDown className="h-4 w-4 ml-2" />
+            </Button>
+
             {showFilterMenu && (
               <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
                 <div className="py-1" role="menu" aria-orientation="vertical">
                   {statusOptions.map((option) => (
                     <button
-                      key={option.label}
+                      key={option.value || 'all'}
                       className={`block px-4 py-2 text-sm w-full text-left ${
                         statusFilter === option.value
                           ? 'bg-gray-100 text-gray-900'
@@ -700,33 +865,15 @@ const Leads: React.FC = () => {
       </div>
 
       <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          <div className="col-span-full flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-          </div>
-        ) : (
-          filteredLeads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} />
-          ))
-        )}
+        {filteredLeads.map((lead) => (
+          <LeadCard key={lead.id} lead={lead} />
+        ))}
       </div>
 
-      {filteredLeads.length === 0 && !isLoading && (
-        <div className="mt-6 flex flex-col items-center justify-center text-center py-12">
-          <AlertCircle className="h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No leads found</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {searchQuery
-              ? `No leads matching "${searchQuery}" found. Try a different search term.`
-              : 'No leads match the current filters.'}
-          </p>
-        </div>
-      )}
-
-      {showUploadModal && <UploadModal />}
-      {showNewLeadModal && <NewLeadModal />}
+      {/* Modals */}
       {showViewModal && <ViewLeadModal />}
       {showEditModal && <EditLeadModal />}
+      {showNewLeadModal && <NewLeadModal />}
     </div>
   );
 };
