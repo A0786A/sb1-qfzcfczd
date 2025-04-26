@@ -1,0 +1,17 @@
+<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="unicornGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9333EA"/>
+      <stop offset="100%" style="stop-color:#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="stripeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#DC2626"/>
+      <stop offset="100%" style="stop-color:#B91C1C"/>
+    </linearGradient>
+  </defs>
+  <path d="M250 100 L350 150 L380 250 L350 350 L300 380 L250 400 L200 380 L150 350 L120 250 L150 150 Z" fill="url(#unicornGradient)"/>
+  <path d="M240 150 L270 50 L300 150 Z" fill="url(#unicornGradient)"/>
+  <path d="M150 280 L350 280 L340 310 L140 310 Z" fill="url(#stripeGradient)"/>
+  <path d="M160 330 L360 330 L350 360 L150 360 Z" fill="url(#stripeGradient)"/>
+  <path d="M170 380 L370 380 L360 410 L160 410 Z" fill="url(#stripeGradient)"/>
+</svg>
